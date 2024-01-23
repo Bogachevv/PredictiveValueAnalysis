@@ -106,7 +106,7 @@ def _qet_quantiles(x: Union[np.ndarray, Tuple[float, float]],
 def plot_precision_curve(y_true, y_pred, ax=None, proba: List[float] = None,
                          rug_plot: bool = False,
                          plot_optimal: bool = False,
-                         plot_mode: Literal['raw', 'deviation'] = 'raw',
+                         plot_mode: Literal['raw', 'deviation', 'relative'] = 'raw',
                          **kwargs):
     ax = plt.subplots()[1] if ax is None else ax
     proba = [0.5, 0.95] if proba is None else sorted(proba)
@@ -132,6 +132,8 @@ def plot_precision_curve(y_true, y_pred, ax=None, proba: List[float] = None,
             def plt_mode_preprocessor(x_v, y_v): return y_v
         case 'deviation':
             def plt_mode_preprocessor(x_v, y_v): return y_v - x_v
+        case 'relative':
+            def plt_mode_preprocessor(x_v, y_v): return y_v / x_v
         case _:
             raise ValueError(f'Unknown plot mode: {plot_mode}')
 
