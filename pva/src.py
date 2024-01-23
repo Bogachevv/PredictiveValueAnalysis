@@ -1,6 +1,7 @@
 import numpy as np
 import scipy
 import matplotlib.pyplot as plt
+import seaborn as sns
 from typing import List, Dict, Callable, Tuple, Union
 import warnings
 from bisect import bisect_left
@@ -102,7 +103,7 @@ def _qet_quantiles(x: Union[np.ndarray, Tuple[float, float]],
     return q_res
 
 
-def plot_precision_curve(y_true, y_pred, ax=None, proba: List[float] = None, **kwargs):
+def plot_precision_curve(y_true, y_pred, ax=None, proba: List[float] = None, rug_plot: bool = False, **kwargs):
     ax = plt.subplots()[1] if ax is None else ax
     proba = [0.5, 0.95] if proba is None else sorted(proba)
 
@@ -122,10 +123,13 @@ def plot_precision_curve(y_true, y_pred, ax=None, proba: List[float] = None, **k
         num_y_dots=2 ** 16
     )
 
-
-    plt.plot(x, q_res[0.5], c='b', label='median')
+    ax.plot(x, q_res[0.5], c='b', label='median')
 
     for p in proba:
         ax.fill_between(x, q_res[0.5 - p/2], q_res[0.5 + p/2], alpha=0.2, label=f'{p*100:.1f}%')
+
+    if rug_plot:
+        sns.rugplot(x=y_true, ax=ax, label='Distribution of actual values')
+        sns.rugplot(y=y_pred, ax=ax, label='Distribution of predicted values')
 
     ax.legend()
