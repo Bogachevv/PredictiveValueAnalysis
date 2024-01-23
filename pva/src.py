@@ -5,6 +5,7 @@ import seaborn as sns
 from typing import List, Dict, Callable, Tuple, Union, Literal
 import warnings
 from bisect import bisect_left
+import itertools
 
 
 def _check_quantiles_input(x, y, quantiles: List[float]):
@@ -103,13 +104,30 @@ def _qet_quantiles(x: Union[np.ndarray, Tuple[float, float]],
     return q_res
 
 
+def _gen_proba_bounds(proba: list[float]):
+    for p in proba:
+        yield 0.5 + p/2
+
+    yield 0.5
+
+    for p in reversed(proba):
+        yield 0.5 - p/2
+
+
+def _gen_proba_bound_pairs(proba: list[float]):
+    g1, g2 = itertools.tee(_gen_proba_bounds(proba), 2)
+    next(g2)
+
+    yield from zip(g1, g2)
+
+
 def plot_precision_curve(y_true, y_pred, ax=None, proba: List[float] = None,
                          rug_plot: bool = False,
                          plot_optimal: bool = False,
                          plot_mode: Literal['raw', 'deviation', 'relative'] = 'raw',
                          **kwargs):
     ax = plt.subplots()[1] if ax is None else ax
-    proba = [0.5, 0.95] if proba is None else sorted(proba)
+    proba = [0.95, 0.5] if proba is None else sorted(proba, reverse=True)
 
     pdf = scipy.stats.gaussian_kde((y_true, y_pred))
 
@@ -142,9 +160,14 @@ def plot_precision_curve(y_true, y_pred, ax=None, proba: List[float] = None,
 
     ax.plot(x, plt_mode_preprocessor(x, q_res[0.5]), c='b', label='median')
 
-    for p in proba:
-        ax.fill_between(x, plt_mode_preprocessor(x, q_res[0.5 - p/2]), plt_mode_preprocessor(x, q_res[0.5 + p/2]),
-                        alpha=0.2, label=f'{p*100:.1f}%')
+    colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
+
+    for i, (p_u, p_d) in enumerate(_gen_proba_bound_pairs(proba)):
+        c = colors[i if i < len(proba) else 2*len(proba) - i - 1]
+        label = f'{(p_u - 0.5) * 2 * 100:.1f}%' if p_u > 0.5 else None
+        print(f"p_u: {p_u}, p_d: {p_d}, c: {c}")
+        ax.fill_between(x, plt_mode_preprocessor(x, q_res[p_d]), plt_mode_preprocessor(x, q_res[p_u]),
+                        alpha=0.2, label=label, color=c)
 
     if rug_plot:
         sns.rugplot(x=y_true, ax=ax, label='Distribution of actual values')

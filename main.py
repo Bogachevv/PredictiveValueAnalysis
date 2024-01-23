@@ -22,7 +22,7 @@ def main():
 
     print(ridge.coef_)
 
-    plot_precision_curve(y_true=y_test, y_pred=y_pred, plot_optimal=True, rug_plot=True, plot_mode='relative')
+    plot_precision_curve(y_true=y_test, y_pred=y_pred, plot_optimal=True, rug_plot=True, plot_mode='deviation')
 
     plt.show()
 
