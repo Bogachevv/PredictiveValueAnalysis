@@ -8,7 +8,7 @@ from pva import plot_precision_curve
 
 
 def main():
-    X, y = make_regression(n_samples=1_000, n_features=1, noise=2, random_state=42)
+    X, y = make_regression(n_samples=100_000, n_features=1, noise=2, random_state=42)
 
     if np.min(y) < 0:
         y -= np.min(y) - 10
@@ -20,9 +20,17 @@ def main():
     ridge.fit(X_train, y_train)
     y_pred = ridge.predict(X_test)
 
+    y_pred += 100
+
     print(ridge.coef_)
 
-    plot_precision_curve(y_true=y_test, y_pred=y_pred, plot_optimal=True, rug_plot=True, plot_mode='relative')
+    _, ax = plt.subplots(ncols=2, sharey=True, sharex=True, figsize=(14, 5))
+
+    # plot_precision_curve(y_true=y_test, y_pred=y_pred, plot_optimal=True, rug_plot=True, show_legend=False,
+    #                      plot_mode='deviation', strategy='kde', ax=ax[0])
+
+    plot_precision_curve(y_true=y_test, y_pred=y_pred, plot_optimal=True, rug_plot=True, show_legend=False,
+                         plot_mode='deviation', strategy='fastkde', ax=ax[1])
 
     plt.show()
 
