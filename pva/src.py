@@ -121,10 +121,29 @@ def _gen_proba_bound_pairs(proba: list[float]):
     yield from zip(g1, g2)
 
 
+def _raw_plt_mode(x_v, y_v):
+    return y_v
+
+
+def _deviation_plt_mode(x_v, y_v):
+    return y_v - x_v
+
+
+@np.vectorize
+def _relative_plt_mode(x_v, y_v, eps: float = 1):
+    if np.abs(x_v) > eps:
+        return (y_v - x_v) / np.abs(x_v)
+
+    return (y_v - x_v) / eps
+
+
 def plot_precision_curve(y_true, y_pred, ax=None, proba: List[float] = None,
                          rug_plot: bool = False,
                          plot_optimal: bool = False,
                          plot_mode: Literal['raw', 'deviation', 'relative'] = 'raw',
+                         x_label: str = 'Actual value', y_label: str = 'Predicted value',
+                         show_legend: bool = True,
+                         alpha: float = 0.25,
                          **kwargs):
     ax = plt.subplots()[1] if ax is None else ax
     proba = [0.95, 0.5] if proba is None else sorted(proba, reverse=True)
@@ -145,15 +164,13 @@ def plot_precision_curve(y_true, y_pred, ax=None, proba: List[float] = None,
         num_y_dots=2 ** 16
     )
 
-    match plot_mode:
-        case 'raw':
-            def plt_mode_preprocessor(x_v, y_v): return y_v
-        case 'deviation':
-            def plt_mode_preprocessor(x_v, y_v): return y_v - x_v
-        case 'relative':
-            def plt_mode_preprocessor(x_v, y_v): return y_v / x_v
-        case _:
-            raise ValueError(f'Unknown plot mode: {plot_mode}')
+    plt_modes = {
+        'raw': _raw_plt_mode,
+        'deviation': _deviation_plt_mode,
+        'relative': _relative_plt_mode,
+    }
+
+    plt_mode_preprocessor = plt_modes[plot_mode]
 
     if plot_optimal:
         ax.plot(x, plt_mode_preprocessor(x, x), c='r', label='Best regressor', linestyle='--')
@@ -167,7 +184,7 @@ def plot_precision_curve(y_true, y_pred, ax=None, proba: List[float] = None,
         label = f'{(p_u - 0.5) * 2 * 100:.1f}%' if p_u > 0.5 else None
         print(f"p_u: {p_u}, p_d: {p_d}, c: {c}")
         ax.fill_between(x, plt_mode_preprocessor(x, q_res[p_d]), plt_mode_preprocessor(x, q_res[p_u]),
-                        alpha=0.2, label=label, color=c)
+                        alpha=alpha, label=label, color=c)
 
     if rug_plot:
         sns.rugplot(x=y_true, ax=ax, label='Distribution of actual values')
@@ -176,4 +193,8 @@ def plot_precision_curve(y_true, y_pred, ax=None, proba: List[float] = None,
         elif plot_mode == 'deviation':
             sns.rugplot(y=y_pred - y_true, ax=ax, label='Distribution of predicted values')
 
-    ax.legend()
+    ax.set_xlabel(x_label)
+    ax.set_ylabel(y_label)
+
+    if show_legend:
+        ax.legend()
