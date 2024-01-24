@@ -197,7 +197,7 @@ def plot_precision_curve(y_true, y_pred, ax=None, proba: List[float] = None,
             num_y_dots=2 ** 16
         )
     else:
-        fastkde = fastKDE.conditional(inputVars=y_pred, conditioningVars=y_true, peak_frac=1e-4)
+        fastkde = fastKDE.conditional(inputVars=y_pred, conditioningVars=y_true, peak_frac=1e-4, num_points=2**12 + 1)
         x, q_res = _qet_quantiles_fastkde(
             fastkde=fastkde,
             quantiles=q,
